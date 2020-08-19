@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function(){
+        $("#introduction").hide();
+        $("#status_id").hide();
+        $.when(
+            $.ajax({
+               type: "POST",
+               url:"getAccuracyImage",
+               contentType: "image/png",
+                success: function(data){
+                $('#accuracy_image').attr("src", "data:image/png;base64," + data); },
+                error: function(e) {
+                   alert("error")
+                }
+            }),
+
+
+
+            $.ajax({
+               type: "POST",
+               url:"getResultMessage",
+               contentType: "text/plain",
+                success: function(data){
+                   var obj = JSON.parse(data)
+                    if (parseInt(obj.id) !==0 ){
+                        $$('#message_result').text(obj["image result"]);
+                    }
+                },
+                error: function(e) {
+                   alert("error")
+                }
+            })
+        ).then(function() {});
+
+        $('#refresh_button').click(function() {
+            //alert('click1');
+            $.ajax({
+                type: "POST",
+                url:"getAccuracyImage",
+                contentType: "image/png",
+                success: function(data){
+                $('#accuracy_image').attr("src", "data:image/png;base64," + data); },
+                error: function(e) {
+                   alert("error")
+                }
+            })
+        });
+
+        $('#update_button').click(function() {
+
+            $.ajax({
+            type: "POST",
+            url:"startSignal",
+            contentType: "text/plain",
+            success: function(data){
+                //$('#result_image').attr("src", "data:image/png;base64," + data);
+                $("#status_id").text("Training model...").show();
+
+            },
+            error: function(e) {
+               alert("error")
+            }
+            })
+        });
+
+        $("#btnClick").click(function () {
+        var formData = new FormData();
+
+        formData.append("file", $("#uploadingfile")[0].files[0]);
+        $.ajax({
+            url: '/fileUpload',
+            type: 'post',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (msg) {
+                $.ajax({
+           type: "POST",
+           url:"getResultImage",
+           contentType: "image/png",
+            success: function(data){
+            $('#result_image').attr("src", "data:image/png;base64," + data); },
+            error: function(e) {
+               alert("error")
+            }
+        })
+            }
+        });
+        });
+        var flagForHide = false;
+        $("#introduction_btn").click(function() {
+            if (flagForHide === true) {
+                flagForHide = false;
+                $("#introduction").hide();
+            } else {
+                flagForHide = true;
+                $("#introduction").show();
+            }
+
+        });
+
+        function autoLoading() {
+            $.ajax({
+                    type: "POST",
+                    url:"getAccuracyImage",
+                    contentType: "image/png",
+                    success: function(data){
+                        $('#accuracy_image').attr("src", "data:image/png;base64," + data);
+                    },
+                    error: function(e) {
+                        alert("error")
+                    }
+            })
+        }
+
+        function autoLoadingResultText() {
+            $.ajax({
+                type: "POST",
+                url:"getResultMessage",
+                contentType: "text/plain",
+                success: function(data){
+                    var obj = JSON.parse(data)
+                    if (parseInt(obj.id) !==0 ){
+                        // image result
+                        $('#message_result').text(obj["image result"]);
+                    }
+                },
+                error: function(e) {
+                    alert("error")
+                    }
+            })
+        }
+        /*
+        $.extend({
+            autoLoading:function() {
+
+            }
+        })*/
+        function autoCheckSignal() {
+            $.ajax({
+                type: "POST",
+                url:"checkSignal",
+                contentType: "text/plain",
+                success: function(data){
+
+                    var status = parseInt(data);
+                    if (status === 1) {
+
+                    } else if (status === 0) {
+                        $("#status_id").text("Done!")
+                    } else if (status === 2) {
+                        $("#status_id").text("Training model...")
+                    }
+                },
+                error: function(e) {
+                    alert("error")
+                }
+            })
+        }
+        setInterval(autoLoading,4000);
+        setInterval(autoCheckSignal,5000);
+        setInterval(autoLoadingResultText,8000);
+
+
+    });
+
+</script>
+
+<html lang="en">
+
+    <head>
+        <title>Image Recognition</title>
+        <style>
+            body {
+              font-family: Arial;
+              color: black;
+            }
+
+            .split {
+              height: 100%;
+              width: 50%;
+              position: fixed;
+              z-index: 1;
+              top: 0;
+              overflow-x: hidden;
+              padding-top: 20px;
+            }
+
+            /* Control the left side */
+            .left {
+              left: 0;
+            }
+
+            /* Control the right side */
+            .right {
+              right: 0;
+            }
+
+        </style>
+    </head>
+
+
+    <body style="text-align:center;">
+
+        <div class="split left">
+
+            <h2 style="color:black;">Train Cloud Model</h2>
+            <div class="up">
+                <button id="introduction_btn">introduction</button>
+                <button id="update_button"> Update </button>
+                <button id="refresh_button"> Refresh </button>
+            </div>
+            <div class="down">
+                <img id= "accuracy_image"/> <br/>
+                <p id="status_id"></p>
+                <p id="introduction">
+                    We proposed a new federation method, called federated distillation (FD), which federates the on-device models by distilling their knowledge and transferring it to the in-cloud model.
+                    First, we train the two edge models using the public data and its own private dataset. Then, we train the cloud model using knowledge transfer.
+                    <br/>
+                    Our app can 1) show the training process of the cloud model by displaying how its accuracy changes, and 2) support uploading images, classifying images, and displaying the results of the uploaded image.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="split right">
+
+            <h2 style="color:black;">Image Recognition</h2>
+
+            <input id="uploadingfile" type="file" name="uploadFile"><br>
+            <input type="button" id="btnClick" value="upload file">
+            <br/>
+            <br/>
+            <br/>
+            <img id="result_image" width="320" height="320"/>
+            <br/>
+            <br/>
+            <br/>
+            <p style="color:black;" id="message_result"></p>
+
+        </div>
+
+
+    </body>
+
+</html>
+
+
+
